@@ -2,22 +2,25 @@ import math
 
 class Cidades:
 
-    def __init__(self):
-        self.cidades = []
-        self.matriz_dist = []
-        self.matriz_feromonios = []
+    
+    def __init__(self): #construtos de Cidades
+        self.cidades = [] #vetor com todas as cidades
+        self.matriz_dist = [] #matriz com as distancias emtre as cidades
+        self.matriz_feromonios = [] #matriz com os feromonios entre as cidades
         
-    def setCidades(self, x, y):
-        self.cidades.append((x, y))
+    def setCidades(self, x, y): #adciona uma nova cidade no vertor de cidades
+        self.cidades.append((x, y)) #cada cidade tem uma tupla com as coordenadas X e Y
 
-    def printCidades(self):
+    def printCidades(self): #printa vetor de cidades
         print(self.cidades)
 
-    def printMatrizDist(self):
+    def printMatrizDistancia(self): #printa vetor de cidades
         print(self.matriz_dist)
+
+    def printMatrizFeromonios(self): #printa vetor de cidades
         print(self.matriz_feromonios)
         
-    def geraMatrizes(self):
+    def geraMatrizes(self): #calcula a distancia euclidiana entre cada cidade e iniciliza os feromonios com 1
         qtd = len(self.cidades)
         for i in range(qtd):
             aux, aux2 = [], []
@@ -27,15 +30,11 @@ class Cidades:
             self.matriz_dist.append(aux)
             self.matriz_feromonios.append(aux2)
     
-    def getSize(self):
+    def getSize(self): #retorna a quantidade de cidades
         return len(self.cidades)]
     
-    def getDistancia(self, x, y):
+    def getDistancia(self, x, y): #retorna a distancia entre a as cidades X e Y
         return matriz_dist[x][y]
 
-
-    
-
-
-
-
+    def getFeromonio(self, x, y): #retorna os feromonios entre a cidade X e Y
+        return matriz_feromonios[x][y]
