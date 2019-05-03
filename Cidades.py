@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*
+
 import math
 
 class Cidades:
@@ -31,10 +33,19 @@ class Cidades:
             self.matriz_feromonios.append(aux2)
     
     def getSize(self): #retorna a quantidade de cidades
-        return len(self.cidades)]
+        return len(self.cidades)
     
     def getDistancia(self, x, y): #retorna a distancia entre a as cidades X e Y
-        return matriz_dist[x][y]
+        return self.matriz_dist[x][y]
 
     def getFeromonio(self, x, y): #retorna os feromonios entre a cidade X e Y
-        return matriz_feromonios[x][y]
+        return self.matriz_feromonios[x][y]
+    
+    def evaporaFeromnonio(self):
+        qtd = len(self.cidades)
+        for x in range(qtd):
+            for y in range(qtd):
+                self.matriz_feromonio[x][y]=((1-0.6)*matriz_feromonio[x][y])
+                
+    def depositaFeromnonio(self, x, y, valor):
+        self.matriz_feromonio[x][y]+=valor

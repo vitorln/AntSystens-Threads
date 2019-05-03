@@ -1,14 +1,16 @@
+# -*- coding: utf-8 -*
 import threading
 from Formiga import Formiga
 from Cidades import Cidades
+import random
 
 def readFile(name, cidades): 
     with open("dados/" + name + ".txt", "r") as file:
         data = file.read() #le o arquivo de com as cidades
     lines = data.split('\n') #cria um vetor de cidades 
-    for line in enumerate(lines):
+    for line in lines:
         coordinates = line.split(" ") # para cada cidade, cria um vetor de coordenadas
-        cidades.setCidades(float(coordinates[0]),float(coordinates[1])) #parametros: coordenada X e Y de uma cidade
+        cidades.setCidades(float(coordinates[0]), float(coordinates[1])) #parametros: coordenada X e Y de uma cidade
         
 def AS(cidades):
     melhor_formiga = Formiga() #chama o construtos de formiga
@@ -21,30 +23,61 @@ def AS(cidades):
 
     for i in range(cidades.getSize() * 10): #"for" de geraçoes de formigas
         threads = [] #cria vetor de threads
+        cond = threading.Condition()
+        cont = 0
         for j in range(cidades.getSize()): # "for" de formigas
             formiga = Formiga() #cria uma formiga
             formiga.setPosicao(j) #seta uma posiçao inicial, cada formiga inicia em uma cidade  
             formiga.atualizaCaminho(j) #seta a primeira cidade do caminho percorrido
-            t = threading.Thread(target=executa, args(formiga, cidades)) # cria a thread na funçao "executa"
+            t = threading.Thread(target=executa, args=(formiga, cidades, melhor_formiga, cond, cidades.getSize(), cont)) # cria a thread na funçao "executa"
             t.daemon = True #faz com q a thread morra quando o pai morrer
             t.start() #inicia a thread
-           	threads.append(t) #acrecenta a thread em um vetor de threads
+            threads.append(t) #acrecenta a thread em um vetor de threads
 
-	        for thread in threads:
-		        thread.join() #espera todas as threads terminarem
-	        
+        for thread in threads:
+            thread.join() #espera todas as threads terminarem    
+    
+    melhor_formiga.printCaminho()
+    
             
 
 
-def executa(formiga, cidades):
+def executa(formiga, cidades, melhor_formiga, cond, tam, cont):
+    global mutex1
+    global espera
     for i in range(cidades.getSize()):
         probabilidade = calcProb(formiga, cidades) #calcula a probabilidade de uma formiga ir para alguma cidade, retorna um vetor de probabilidades
+        indice = roleta(probabilidade)
+        formiga.setPosicao(indice)
+        formiga.atualizaCaminho(indice)
+        formiga.atualizaDistancia(cidedes.getDistancia(formiga.getCaminho()[-1],formiga.getCaminho()[-2]))
+
+    formiga.atualizaDistancia(cidedes.getDistancia(formiga.getCaminho()[0],formiga.getCaminho()[-1]))
+    
+    espera.acquire()
+    cont +=1
+    if cont == tam:
+        espera.release()
+        cond.notifyAll()
+    else:
+        espera.release()
+        cond.wait()
+
+    cidades.evaporaFeromnonio()
+    atualizaFeromonio(cidades, formiga)
+
+    mutex1.acquire()
+    if melhor_formiga.getDistancia > formiga.getDistancia:
+        melhor_formiga = formiga 
+    mutex1.release()        
+    #.....................................PARAMOS AQUI....................................
+
 
 def calcProb(formiga, cidades):
     probability = []    #cria vetor de probabilidades
     #calcula a probabilidade de uma formiga ir para cada uma das cidades
     for i in range(cidades.getSize()):
-        if i in formiga.gettCaminho: #verifica se a formiga ja passou pela cidade
+        if i in formiga.getCaminho(): #verifica se a formiga ja passou pela cidade
             probability.append(0) #seta a probabilidade como 0 se a formiga ja passou pela cidade
         else:
             aux=0
@@ -57,13 +90,40 @@ def calcProb(formiga, cidades):
 
     return probability #retorna vetor de probabilidades
 
+def roleta(probabilidade):
+    sorteado = random.random()* probabilidade[-1]
+    for i, prob in probabilidade:
+        if sorteado <= prob:
+            return i
+
+def atualizaFeromonio(cidades, formiga):
+    global mutex
+    for i in range(cidades.getSize()):
+        for j in range(cidades.getSize()):
+            for k in range(cidades.getSize()):
+                if (formiga.caminho[k] == i) and (formiga.caminho[k-1] == j):
+                    mutex.acquire()
+                    cidades.depositaFeromnonio(1/formiga.getDistancia)
+                    mutex.release()
+                    break
+                elif (formiga.caminho[k] == j) and (formiga.caminho[k-1] == i):
+                    mutex.acquire()
+                    cidades.depositaFeromnonio(1/formiga.getDistancia)
+                    mutex.release()
+                    break
+
 def main():
     
     cidades = Cidades() #chamada de construtor de Cidades
-    
+
     #abre o arquivo da base da dados
     readFile("att48", cidades) #parametros: nome da base e objeto cidades
-
+    global mutex
+    mutex  = threading.Semaphore(1)
+    global mutex1
+    mutex1  = threading.Semaphore(1)
+    global espera
+    espera  = threading.Semaphore(1)
     cidades.geraMatrizes() #gera matrizes de distancia e feromonios
     
     AS(cidades) #inicia a função do AntSystens

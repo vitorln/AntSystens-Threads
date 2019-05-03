@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*
+
 class Formiga:
     def __init__(self): #construtor da formiga
         self.pos = -1 #posiçao atual da formiga
@@ -19,5 +21,11 @@ class Formiga:
     def getCaminho(self): #retorna o caminho
         return self.caminho
 
-    def getPos(self) #retorna a posiçao atual
+    def getPos(self): #retorna a posiçao atual
         return self.pos
+
+    def printCaminho(self):
+        for i, cidade in self.caminho:
+            print("cidade ", i, ": ", cidade)
+
+        print("\n distancia final: ",self.distancia) 
