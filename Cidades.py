@@ -45,7 +45,8 @@ class Cidades:
         qtd = len(self.cidades)
         for x in range(qtd):
             for y in range(qtd):
-                self.matriz_feromonio[x][y]=((1-0.6)*matriz_feromonio[x][y])
+                self.matriz_feromonios[x][y]=((1-0.6)*self.matriz_feromonios[x][y])
                 
     def depositaFeromnonio(self, x, y, valor):
-        self.matriz_feromonio[x][y]+=valor
+        self.matriz_feromonios[x][y]+=valor
+        self.matriz_feromonios[y][x]+=valor

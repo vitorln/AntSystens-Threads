@@ -25,7 +25,7 @@ class Formiga:
         return self.pos
 
     def printCaminho(self):
-        for i, cidade in self.caminho:
+        for i, cidade in enumerate(self.caminho):
             print("cidade ", i, ": ", cidade)
 
         print("\n distancia final: ",self.distancia) 

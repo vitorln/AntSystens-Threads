@@ -13,6 +13,8 @@ def readFile(name, cidades):
         cidades.setCidades(float(coordinates[0]), float(coordinates[1])) #parametros: coordenada X e Y de uma cidade
         
 def AS(cidades):
+    global cont 
+    global melhor_formiga
     melhor_formiga = Formiga() #chama o construtos de formiga
     #cria uma "melhor formiga", com um caminho linear e sua respectiva distancia, para servir de comparaçao para as demais
     for i in range(cidades.getSize() - 1):
@@ -22,14 +24,16 @@ def AS(cidades):
     melhor_formiga.atualizaDistancia(cidades.getDistancia(cidades.getSize() - 1, 0))
 
     for i in range(cidades.getSize() * 10): #"for" de geraçoes de formigas
+    #for i in range(10):
         threads = [] #cria vetor de threads
         cond = threading.Condition()
         cont = 0
         for j in range(cidades.getSize()): # "for" de formigas
+        #for j in range(1):
             formiga = Formiga() #cria uma formiga
             formiga.setPosicao(j) #seta uma posiçao inicial, cada formiga inicia em uma cidade  
             formiga.atualizaCaminho(j) #seta a primeira cidade do caminho percorrido
-            t = threading.Thread(target=executa, args=(formiga, cidades, melhor_formiga, cond, cidades.getSize(), cont)) # cria a thread na funçao "executa"
+            t = threading.Thread(target=executa, args=(formiga, cidades, cond, cidades.getSize())) # cria a thread na funçao "executa"
             t.daemon = True #faz com q a thread morra quando o pai morrer
             t.start() #inicia a thread
             threads.append(t) #acrecenta a thread em um vetor de threads
@@ -42,36 +46,37 @@ def AS(cidades):
             
 
 
-def executa(formiga, cidades, melhor_formiga, cond, tam, cont):
+def executa(formiga, cidades, cond, tam, ):
     global mutex1
     global espera
+    global cont
+    global melhor_formiga
     for i in range(cidades.getSize()):
         probabilidade = calcProb(formiga, cidades) #calcula a probabilidade de uma formiga ir para alguma cidade, retorna um vetor de probabilidades
         indice = roleta(probabilidade)
         formiga.setPosicao(indice)
         formiga.atualizaCaminho(indice)
-        formiga.atualizaDistancia(cidedes.getDistancia(formiga.getCaminho()[-1],formiga.getCaminho()[-2]))
+        formiga.atualizaDistancia(cidades.getDistancia(formiga.getCaminho()[-1],formiga.getCaminho()[-2]))
 
-    formiga.atualizaDistancia(cidedes.getDistancia(formiga.getCaminho()[0],formiga.getCaminho()[-1]))
-    
-    espera.acquire()
+    formiga.atualizaDistancia(cidades.getDistancia(formiga.getCaminho()[0],formiga.getCaminho()[-1]))
+    #bloco de espera
+    cond.acquire()
     cont +=1
     if cont == tam:
-        espera.release()
+        cidades.evaporaFeromnonio() # esta aqui para garanti q evapore apenas uma vez
         cond.notifyAll()
+        cond.release()
     else:
-        espera.release()
         cond.wait()
-
-    cidades.evaporaFeromnonio()
+        cond.release()
+    #fim do bloco de espera
+    
     atualizaFeromonio(cidades, formiga)
 
     mutex1.acquire()
-    if melhor_formiga.getDistancia > formiga.getDistancia:
+    if melhor_formiga.getDistancia() > formiga.getDistancia():
         melhor_formiga = formiga 
     mutex1.release()        
-    #.....................................PARAMOS AQUI....................................
-
 
 def calcProb(formiga, cidades):
     probability = []    #cria vetor de probabilidades
@@ -92,7 +97,7 @@ def calcProb(formiga, cidades):
 
 def roleta(probabilidade):
     sorteado = random.random()* probabilidade[-1]
-    for i, prob in probabilidade:
+    for i, prob in enumerate(probabilidade):
         if sorteado <= prob:
             return i
 
@@ -103,12 +108,12 @@ def atualizaFeromonio(cidades, formiga):
             for k in range(cidades.getSize()):
                 if (formiga.caminho[k] == i) and (formiga.caminho[k-1] == j):
                     mutex.acquire()
-                    cidades.depositaFeromnonio(1/formiga.getDistancia)
+                    cidades.depositaFeromnonio(formiga.caminho[k], formiga.caminho[k-1], 1.0/formiga.getDistancia())
                     mutex.release()
                     break
                 elif (formiga.caminho[k] == j) and (formiga.caminho[k-1] == i):
                     mutex.acquire()
-                    cidades.depositaFeromnonio(1/formiga.getDistancia)
+                    cidades.depositaFeromnonio(formiga.caminho[k], formiga.caminho[k-1], 1.0/formiga.getDistancia())
                     mutex.release()
                     break
 
@@ -124,6 +129,7 @@ def main():
     mutex1  = threading.Semaphore(1)
     global espera
     espera  = threading.Semaphore(1)
+    global cont 
     cidades.geraMatrizes() #gera matrizes de distancia e feromonios
     
     AS(cidades) #inicia a função do AntSystens
