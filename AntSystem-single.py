@@ -5,6 +5,7 @@ from Cidades import Cidades
 import random
 import time
 
+
 def readFile(name, cidades): 
     with open("dados/" + name + ".txt", "r") as file:
         data = file.read() #le o arquivo de com as cidades
