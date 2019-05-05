@@ -27,14 +27,13 @@ def AS(cidades):
     for i in range(cidades.getSize() * 10): #"for" de geraçoes de formigas
     #for i in range(10):
         threads = [] #cria vetor de threads
-        cond = threading.Condition()
         cont = 0
         for j in range(cidades.getSize()): # "for" de formigas
         #for j in range(1):
             formiga = Formiga() #cria uma formiga
             formiga.setPosicao(j) #seta uma posiçao inicial, cada formiga inicia em uma cidade  
             formiga.atualizaCaminho(j) #seta a primeira cidade do caminho percorrido
-            t = threading.Thread(target=executa, args=(formiga, cidades, cond, cidades.getSize())) # cria a thread na funçao "executa"
+            t = threading.Thread(target=executa, args=(formiga, cidades, cidades.getSize())) # cria a thread na funçao "executa"
             t.daemon = True #faz com q a thread morra quando o pai morrer
             t.start() #inicia a thread
             threads.append(t) #acrecenta a thread em um vetor de threads
@@ -47,7 +46,7 @@ def AS(cidades):
             
 
 
-def executa(formiga, cidades, cond, tam, ):
+def executa(formiga, cidades, tam, ):
     global mutex1
     global espera
     global cont
@@ -60,21 +59,22 @@ def executa(formiga, cidades, cond, tam, ):
         formiga.atualizaDistancia(cidades.getDistancia(formiga.getCaminho()[-1],formiga.getCaminho()[-2]))
 
     formiga.atualizaDistancia(cidades.getDistancia(formiga.getCaminho()[0],formiga.getCaminho()[-1]))
+    #primeira condição de disputa: todas as formigas tem de ter terminado suas rootas para poder atualizar os feromonios
     #bloco de espera
-    cond.acquire()
+    espera.acquire()
     cont +=1
     if cont == tam:
         cidades.evaporaFeromnonio() # esta aqui para garanti q evapore apenas uma vez
-        cond.notifyAll()
-        cond.release()
+        espera.notifyAll()
+        espera.release()
     else:
-        cond.wait()
-        cond.release()
+        espera.wait()
+        espera.release()
     #fim do bloco de espera
     
-    atualizaFeromonio(cidades, formiga)
+    atualizaFeromonio(cidades, formiga) #atualisa feromonios, é onde esta a segunda condição de disputa
 
-    mutex1.acquire()
+    mutex1.acquire() #terceira condição de disputa: uma formiga de cada vez tem de verificar se percorreu o menor cominho
     if melhor_formiga.getDistancia() > formiga.getDistancia():
         melhor_formiga = formiga 
     mutex1.release()        
@@ -108,12 +108,12 @@ def atualizaFeromonio(cidades, formiga):
         for j in range(cidades.getSize()):
             for k in range(cidades.getSize()):
                 if (formiga.caminho[k] == i) and (formiga.caminho[k-1] == j):
-                    mutex.acquire()
+                    mutex.acquire() #segunda condição de disputa: uma formiga de cada vez deve atualizar os feromonios na tabela
                     cidades.depositaFeromnonio(formiga.caminho[k], formiga.caminho[k-1], 1.0/formiga.getDistancia())
                     mutex.release()
                     break
                 elif (formiga.caminho[k] == j) and (formiga.caminho[k-1] == i):
-                    mutex.acquire()
+                    mutex.acquire() #segunda condição de disputa: uma formiga de cada vez deve atualizar os feromonios na tabela
                     cidades.depositaFeromnonio(formiga.caminho[k], formiga.caminho[k-1], 1.0/formiga.getDistancia())
                     mutex.release()
                     break
@@ -129,7 +129,7 @@ def main():
     global mutex1
     mutex1  = threading.Semaphore(1)
     global espera
-    espera  = threading.Semaphore(1)
+    espera  = threading.Condition()
     global cont 
     cidades.geraMatrizes() #gera matrizes de distancia e feromonios
     
