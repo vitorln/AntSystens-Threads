@@ -3,6 +3,7 @@ import threading
 from Formiga import Formiga
 from Cidades import Cidades
 import random
+import time
 
 def readFile(name, cidades): 
     with open("dados/" + name + ".txt", "r") as file:
@@ -135,4 +136,6 @@ def main():
     AS(cidades) #inicia a função do AntSystens
 
 if __name__ == "__main__":
+    start_time = time.time() 
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))
